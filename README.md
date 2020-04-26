@@ -1,6 +1,7 @@
 # kanboard-tasks-from-email
-Simple script to create kanboard tasks from email
+Simple script to create kanboard tasks from email.
 
+*** The code is in its early stages and specifically made for a particular use-case. It's not (yet) good-to-go. Don't use it unless you're experienced in using python. ***
 
 ## Introduction
 This scripts creates [kanboard](https://kanboard.org/) tasks from unread mails through the API using the official [python API client](https://github.com/kanboard/python-api-client). The reason for this script was to use kanboard as a very simple helpdesk used via email. This script is solely being used for that purpose.

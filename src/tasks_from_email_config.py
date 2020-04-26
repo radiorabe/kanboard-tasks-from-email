@@ -74,3 +74,9 @@ KANBOARD_GROUP_ID = 0
 # Name of the kanboard project where new tasks are going to be created.
 KANBOARD_PROJECT_NAME = 'Support'
 
+#
+# various
+#
+# well-known mail addresses from where emails could be forwarded because they
+# were sent to the wrong address
+WELL_KNOWN_EMAIL_ADDRESS = []

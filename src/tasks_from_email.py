@@ -110,7 +110,7 @@ def main():
             email address and timestamp from message body """
         fwd_email_addresses=re.findall('\S+@\S+', '%s' % body)
         fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
-        if fwd_to_email_address == 'it@rabe.ch':
+        if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
             email_address = re.sub('[<>]', '', fwd_email_addresses[0])
             local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*', 
                                                                       '', 

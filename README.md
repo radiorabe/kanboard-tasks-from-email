@@ -1,7 +1,7 @@
 # kanboard-tasks-from-email
 Simple script to create kanboard tasks from email.
 
-*** The code is in its early stages and specifically made for a particular use-case. It's not (yet) good-to-go. Don't use it unless you're experienced in using python. ***
+___The code is in its early stages and specifically made for a particular use-case. It's not (yet) good-to-go. Don't use it unless you're experienced in using python.___
 
 ## Introduction
 This scripts creates [kanboard](https://kanboard.org/) tasks from unread mails through the API using the official [python API client](https://github.com/kanboard/python-api-client). The reason for this script was to use kanboard as a very simple helpdesk used via email. This script is solely being used for that purpose.
@@ -23,7 +23,10 @@ For each email received from a new address, a user will be created so he can rec
 3. Copy the files the destination you want to run the script
 4. Adjust the settings in [tasks_from_email_config.py](https://github.com/radiorabe/kanboard-tasks-from-email/blob/master/src/tasks_from_email_config.py)
 
+TODO: more detailed instructions
 
 TODO: systemd unit
 
 TODO: installation package
+
+TODO: re-organize code

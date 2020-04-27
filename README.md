@@ -1,4 +1,4 @@
-# kanboard-tasks-from-email
+# Simple script to create kanboard tasks from email
 Simple script to create kanboard tasks from email.
 
 ___The code is in its early stages and specifically made for a particular use-case. It's not (yet) good-to-go. Don't use it unless you're experienced in using python.___

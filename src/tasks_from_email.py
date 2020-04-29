@@ -99,12 +99,19 @@ def main():
         email_to = email_message['To']
         subject = email.header.make_header(email.header.decode_header(email_message['Subject']))
 
+        kb_attachments = {}
+
         for part in email_message.walk():
             """ get plain text body details """
-            if part.get_content_type() == 'text/plain':
-                body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
-            else:
+            if part.get_content_maintype() == 'multipart':
                 continue
+            if part.get('Content-Disposition') is None:
+                if part.get_content_type() == 'text/plain':
+                    body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
+                continue
+            fileName.append(part.get_filename())
+            if bool(fileName):
+                kb_attachments[fileName] = base64.b64encode(part.get_payload(decode=True))
 
         """ if the email has been forwarded from specified addresses use sender 
             email address and timestamp from message body """
@@ -174,12 +181,12 @@ def main():
         """ add the email as an attachment to the task in case it's not properly displayed 
             in the description or comment """
         if kb_task_id != False:
-            kb_fileblob=base64.b64encode(raw_email)
-            kb_filename = '%s.mbox' % re.sub('[^\w_.)( -]', '_', str(subject))
-            kb.create_task_file(project_id=str(kb_project_id), 
-                                task_id=str(kb_task_id), 
-                                filename=kb_filename, 
-                                blob=kb_fileblob.decode('utf-8'))
+            kb_attachments['%s.mbox' % re.sub('[^\w_.)( -]', '_', str(subject))] = base64.b64encode(raw_email)
+            for i in kb_attachments
+                kb.create_task_file(project_id=str(kb_project_id), 
+                                    task_id=str(kb_task_id), 
+                                    filename=str(i), 
+                                    blob=kb_attachments[i].decode('utf-8'))
 
     """ close mailserver connection """
     imap_connection.close()

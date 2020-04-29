@@ -109,14 +109,14 @@ def main():
                 if part.get_content_type() == 'text/plain':
                     body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
                 continue
-            fileName.append(part.get_filename())
+            fileName = part.get_filename()
             if bool(fileName):
                 kb_attachments[fileName] = base64.b64encode(part.get_payload(decode=True))
+                body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
 
         """ if the email has been forwarded from specified addresses use sender 
             email address and timestamp from message body """
         fwd_email_addresses=re.findall('\S+@\S+', '%s' % body)
-        fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
         if fwd_email_addresses:
             fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
             if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
@@ -184,7 +184,7 @@ def main():
             in the description or comment """
         if kb_task_id != False:
             kb_attachments['%s.mbox' % re.sub('[^\w_.)( -]', '_', str(subject))] = base64.b64encode(raw_email)
-            for i in kb_attachments
+            for i in kb_attachments:
                 kb.create_task_file(project_id=str(kb_project_id), 
                                     task_id=str(kb_task_id), 
                                     filename=str(i), 

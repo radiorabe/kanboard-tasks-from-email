@@ -79,4 +79,4 @@ KANBOARD_PROJECT_NAME = 'Support'
 #
 # well-known mail addresses from where emails could be forwarded because they
 # were sent to the wrong address
-WELL_KNOWN_EMAIL_ADDRESS = []
+WELL_KNOWN_EMAIL_ADDRESSES = []

@@ -95,34 +95,43 @@ def main():
                                                          KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
         email_from = email_message['From']
         """ extract email address if specified as 'name <email address>' """
-        email_address=re.sub('[<>"\']', '', re.search('\S+@\S+', email_from).group(0))
+        email_address=re.sub('[<>]', '', re.findall('\S+@\S+', email_from)[-1])
         email_to = email_message['To']
         subject = email.header.make_header(email.header.decode_header(email_message['Subject']))
 
+        kb_attachments = {}
+
         for part in email_message.walk():
             """ get plain text body details """
-            if part.get_content_type() == 'text/plain':
-                body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
-            else:
+            if part.get_content_maintype() == 'multipart':
                 continue
+            if part.get('Content-Disposition') is None:
+                if part.get_content_type() == 'text/plain':
+                    body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
+                continue
+            fileName = email.header.make_header(email.header.decode_header(part.get_filename()))
+            if bool(fileName):
+                kb_attachments[str(fileName)] = base64.b64encode(part.get_payload(decode=True))
+                body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
 
         """ if the email has been forwarded from specified addresses use sender 
             email address and timestamp from message body """
-        fwd_email_addresses=re.findall('\S+@\S+', '%s' % body)
-        fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
-        if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
-            email_address = re.sub('[<>]', '', fwd_email_addresses[0])
-            local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*', 
-                                                                      '', 
-                                                                      re.search('^Date:[\S ]+', 
-                                                                                '%s' % body, 
-                                                                                re.MULTILINE).group(0)))
-            local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*', 
-                                                                    '', 
-                                                                    re.search('^Date:[\S ]+', 
-                                                                              '%s' % body, 
-                                                                              re.MULTILINE).group(0)), 
-                                                             KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
+        fwd_email_addresses=re.findall('(From:.*\S+@\S+|To:.*\S+@\S+)', '%s' % body)
+        if fwd_email_addresses:
+            fwd_to_email_address=re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[1])[-1])
+            if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
+                email_address = re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[0])[-1])
+                local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                          '',
+                                                                          re.search('Date:[\S ]+',
+                                                                                    '%s' % body,
+                                                                                    re.MULTILINE).group(0)))
+                local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                        '',
+                                                                        re.search('Date:[\S ]+',
+                                                                                  '%s' % body,
+                                                                                  re.MULTILINE).group(0)),
+                                                                 KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
 
         kb_text = 'From: %s\n\nTo: %s\n\nDate: %s\n\nSubject: %s\n\n%s' % (email_from, 
                                                                            email_to, 
@@ -146,12 +155,10 @@ def main():
         kb_project_id = kb.get_project_by_name(name=str(KANBOARD_PROJECT_NAME))['id']
 
         """ search for link to already existing task """
-        kb_task_search_str = re.escape('%s/project/%s/task/' % (KANBOARD_PUBLIC_URL, kb_project_id))
-        kb_task_search_result = re.search('%s\d+' % kb_task_search_str, '%s' % body, re.MULTILINE)
-
+        kb_task_search_result = re.findall('\[KB#\d+', '%s' % subject)
         kb_task = None
         if kb_task_search_result:
-            kb_task_id = re.sub('%s' % kb_task_search_str, '', kb_task_search_result.group(0))
+            kb_task_id = re.sub('\[KB#', '', kb_task_search_result[-1])
             """ test if task already exists """
             kb_task = kb.get_task(task_id=kb_task_id)
 
@@ -174,12 +181,12 @@ def main():
         """ add the email as an attachment to the task in case it's not properly displayed 
             in the description or comment """
         if kb_task_id != False:
-            kb_fileblob=base64.b64encode(raw_email)
-            kb_filename = '%s.mbox' % re.sub('[^\w_.)( -]', '_', str(subject))
-            kb.create_task_file(project_id=str(kb_project_id), 
-                                task_id=str(kb_task_id), 
-                                filename=kb_filename, 
-                                blob=kb_fileblob.decode('utf-8'))
+            kb_attachments['%s.mbox' % re.sub('[^\w_.)( -]', '_', str(subject))] = base64.b64encode(raw_email)
+            for i in kb_attachments:
+                kb.create_task_file(project_id=str(kb_project_id), 
+                                    task_id=str(kb_task_id), 
+                                    filename=i, 
+                                    blob=kb_attachments[i].decode('utf-8'))
 
     """ close mailserver connection """
     imap_connection.close()

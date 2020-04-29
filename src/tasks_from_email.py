@@ -109,9 +109,9 @@ def main():
                 if part.get_content_type() == 'text/plain':
                     body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
                 continue
-            fileName = part.get_filename()
+            fileName = email.header.make_header(email.header.decode_header(part.get_filename()))
             if bool(fileName):
-                kb_attachments[fileName] = base64.b64encode(part.get_payload(decode=True))
+                kb_attachments[str(fileName)] = base64.b64encode(part.get_payload(decode=True))
                 body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
 
         """ if the email has been forwarded from specified addresses use sender 
@@ -185,7 +185,7 @@ def main():
             for i in kb_attachments:
                 kb.create_task_file(project_id=str(kb_project_id), 
                                     task_id=str(kb_task_id), 
-                                    filename=str(i), 
+                                    filename=i, 
                                     blob=kb_attachments[i].decode('utf-8'))
 
     """ close mailserver connection """

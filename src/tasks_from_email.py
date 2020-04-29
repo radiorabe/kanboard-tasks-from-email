@@ -95,7 +95,7 @@ def main():
                                                          KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
         email_from = email_message['From']
         """ extract email address if specified as 'name <email address>' """
-        email_address=re.sub('[<>"\']', '', re.search('\S+@\S+', email_from).group(0))
+        email_address=re.sub('[<>]', '', re.findall('\S+@\S+', email_from)[-1])
         email_to = email_message['To']
         subject = email.header.make_header(email.header.decode_header(email_message['Subject']))
 
@@ -116,19 +116,19 @@ def main():
 
         """ if the email has been forwarded from specified addresses use sender 
             email address and timestamp from message body """
-        fwd_email_addresses=re.findall('\S+@\S+', '%s' % body)
+        fwd_email_addresses=re.findall('(From:.*\S+@\S+|To:.*\S+@\S+)', '%s' % body)
         if fwd_email_addresses:
-            fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
+            fwd_to_email_address=re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[1])[-1])
             if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
-                email_address = re.sub('[<>]', '', fwd_email_addresses[0])
+                email_address = re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[0])[-1])
                 local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
                                                                           '',
-                                                                          re.search('^Date:[\S ]+',
+                                                                          re.search('Date:[\S ]+',
                                                                                     '%s' % body,
                                                                                     re.MULTILINE).group(0)))
                 local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
                                                                         '',
-                                                                        re.search('^Date:[\S ]+',
+                                                                        re.search('Date:[\S ]+',
                                                                                   '%s' % body,
                                                                                   re.MULTILINE).group(0)),
                                                                  KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
@@ -155,12 +155,10 @@ def main():
         kb_project_id = kb.get_project_by_name(name=str(KANBOARD_PROJECT_NAME))['id']
 
         """ search for link to already existing task """
-        kb_task_search_str = re.escape('%s/project/%s/task/' % (KANBOARD_PUBLIC_URL, kb_project_id))
-        kb_task_search_result = re.search('%s\d+' % kb_task_search_str, '%s' % body, re.MULTILINE)
-
+        kb_task_search_result = re.findall('\[KB#\d+', '%s' % subject)
         kb_task = None
         if kb_task_search_result:
-            kb_task_id = re.sub('%s' % kb_task_search_str, '', kb_task_search_result.group(0))
+            kb_task_id = re.sub('\[KB#', '', kb_task_search_result[-1])
             """ test if task already exists """
             kb_task = kb.get_task(task_id=kb_task_id)
 

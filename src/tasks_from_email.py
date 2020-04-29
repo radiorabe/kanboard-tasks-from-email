@@ -117,19 +117,21 @@ def main():
             email address and timestamp from message body """
         fwd_email_addresses=re.findall('\S+@\S+', '%s' % body)
         fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
-        if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
-            email_address = re.sub('[<>]', '', fwd_email_addresses[0])
-            local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*', 
-                                                                      '', 
-                                                                      re.search('^Date:[\S ]+', 
-                                                                                '%s' % body, 
-                                                                                re.MULTILINE).group(0)))
-            local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*', 
-                                                                    '', 
-                                                                    re.search('^Date:[\S ]+', 
-                                                                              '%s' % body, 
-                                                                              re.MULTILINE).group(0)), 
-                                                             KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
+        if fwd_email_addresses:
+            fwd_to_email_address=re.sub('[<>"\']', '', fwd_email_addresses[1])
+            if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
+                email_address = re.sub('[<>]', '', fwd_email_addresses[0])
+                local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                          '',
+                                                                          re.search('^Date:[\S ]+',
+                                                                                    '%s' % body,
+                                                                                    re.MULTILINE).group(0)))
+                local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                        '',
+                                                                        re.search('^Date:[\S ]+',
+                                                                                  '%s' % body,
+                                                                                  re.MULTILINE).group(0)),
+                                                                 KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
 
         kb_text = 'From: %s\n\nTo: %s\n\nDate: %s\n\nSubject: %s\n\n%s' % (email_from, 
                                                                            email_to, 

@@ -1,4 +1,4 @@
-#!/usr/bin/python3.6
+#!/usr/bin/python3.7
 ################################################################################
 # tasks_from_email.py - Create kanboard tasks from email
 ################################################################################
@@ -142,10 +142,14 @@ def main():
         """ connect to kanboard api """
         kb = kanboard.Client(KANBOARD_CONNECT_URL+'/jsonrpc.php', 'jsonrpc', KANBOARD_API_TOKEN)
 
-        """ create user for sender email """
-        kb_user_id = kb.create_user(username=email_address, password=email_address, email=email_address)
-        if kb_user_id == False:
-            kb_user_id = kb.get_user_by_name(username=email_address)['id']
+        """ create user for sender email if it doesn't exist """
+        kb_user_id = None
+        kb_users = kb.get_all_users()
+        for kb_user in kb_users:
+            if kb_user['email'] == email_address:
+                kb_user_id = kb_user['id']
+        if kb_user_id == None:
+            kb_user_id = kb.create_user(username=email_address, password=email_address, email=email_address)
 
         """ add user to group """
         if KANBOARD_GROUP_ID > 0:

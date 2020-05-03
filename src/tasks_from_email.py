@@ -75,6 +75,14 @@ def convert_to_kb_date(date_str, increment_by_hours=0):
         local_kb_date = "%s" %(str(local_date.strftime('%d.%m.%Y %H:%M')))
     return local_kb_date
 
+def reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_due_date_ISO8601):
+    """ reopen task, update due date and add email as comment """
+    if kb_task['is_active'] == 0:
+        kb.open_task(task_id=kb_task_id)
+    """ add email as comment """
+    kb.create_comment(task_id=kb_task_id, user_id=kb_user_id, content=kb_text)
+    kb.update_task(id=kb_task_id, date_due=local_task_due_date_ISO8601)
+
 def main():
     """ connect and authenticate against mailserver """
     imap_connection = imaplib.IMAP4_SSL(IMAPS_SERVER)
@@ -167,12 +175,7 @@ def main():
             kb_task = kb.get_task(task_id=kb_task_id)
 
         if kb_task:
-            """ reopen task, update due date and add email as comment """
-            if kb_task['is_active'] == 0:
-                kb.open_task(task_id=kb_task_id)
-            """ add email as comment """
-            kb.create_comment(task_id=kb_task_id, user_id=kb_user_id, content=kb_text)
-            kb.update_task(id=kb_task_id, date_due=local_task_due_date_ISO8601)
+            reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_due_date_ISO8601)
         else:
             """ create task in project specified """
             kb_task_id = kb.create_task(project_id=str(kb_project_id), 
@@ -196,4 +199,5 @@ def main():
     imap_connection.close()
     imap_connection.logout()
 
-main()
+if __name__ == "__main__":
+    main()

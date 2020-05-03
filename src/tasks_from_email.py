@@ -75,6 +75,17 @@ def convert_to_kb_date(date_str, increment_by_hours=0):
         local_kb_date = "%s" %(str(local_date.strftime('%d.%m.%Y %H:%M')))
     return local_kb_date
 
+def create_user_for_sender(kb, email_address):
+    """ create user for sender email if it doesn't exist """
+    kb_user_id = None
+    kb_users = kb.get_all_users()
+    for kb_user in kb_users:
+        if kb_user['email'] == email_address:
+            kb_user_id = kb_user['id']
+    if kb_user_id == None:
+        kb_user_id = kb.create_user(username=email_address, password=email_address, email=email_address)
+    return kb_user_id
+
 def reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_due_date_ISO8601):
     """ reopen task, update due date and add email as comment """
     if kb_task['is_active'] == 0:
@@ -150,14 +161,7 @@ def main():
         """ connect to kanboard api """
         kb = kanboard.Client(KANBOARD_CONNECT_URL+'/jsonrpc.php', 'jsonrpc', KANBOARD_API_TOKEN)
 
-        """ create user for sender email if it doesn't exist """
-        kb_user_id = None
-        kb_users = kb.get_all_users()
-        for kb_user in kb_users:
-            if kb_user['email'] == email_address:
-                kb_user_id = kb_user['id']
-        if kb_user_id == None:
-            kb_user_id = kb.create_user(username=email_address, password=email_address, email=email_address)
+        kb_user_id = create_user_for_sender(kb, email_address)
 
         """ add user to group """
         if KANBOARD_GROUP_ID > 0:

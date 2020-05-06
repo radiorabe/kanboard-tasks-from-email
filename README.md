@@ -31,3 +31,21 @@ TODO: systemd unit
 TODO: installation package
 
 TODO: re-organize code
+
+## Development
+
+### Testing
+
+This projects uses [pytest](https://pytest.org). The tests are in the main `src/` directory.
+
+You need to install some test tooling using `pip`:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Next you can run the tests:
+
+```bash
+pytest
+```

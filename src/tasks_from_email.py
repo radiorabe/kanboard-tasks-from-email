@@ -86,6 +86,17 @@ def create_user_for_sender(kb, email_address):
         kb_user_id = kb.create_user(username=email_address, password=email_address, email=email_address)
     return kb_user_id
 
+def get_task_if_subject_matches(kb, subject):
+    """ search for link to already existing task """
+    kb_task_id = False
+    kb_task = None
+    kb_task_search_result = re.findall('\[KB#\d+', '%s' % subject)
+    if kb_task_search_result:
+        kb_task_id = re.sub('\[KB#', '', kb_task_search_result[-1])
+        """ test if task already exists """
+        kb_task = kb.get_task(task_id=kb_task_id)
+    return kb_task_id, kb_task
+
 def reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_due_date_ISO8601):
     """ reopen task, update due date and add email as comment """
     if kb_task['is_active'] == 0:
@@ -170,13 +181,7 @@ def main():
         """ get id from project specified """
         kb_project_id = kb.get_project_by_name(name=str(KANBOARD_PROJECT_NAME))['id']
 
-        """ search for link to already existing task """
-        kb_task_search_result = re.findall('\[KB#\d+', '%s' % subject)
-        kb_task = None
-        if kb_task_search_result:
-            kb_task_id = re.sub('\[KB#', '', kb_task_search_result[-1])
-            """ test if task already exists """
-            kb_task = kb.get_task(task_id=kb_task_id)
+        kb_task_id, kb_task = get_task_if_subject_matches(kb, subject)
 
         if kb_task:
             reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_due_date_ISO8601)

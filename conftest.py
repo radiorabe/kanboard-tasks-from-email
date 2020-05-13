@@ -14,6 +14,7 @@ def kb(mocker):
     kb.create_comment = mocker.Mock()
     kb.create_user = mocker.Mock()
     kb.get_all_users = mocker.Mock()
+    kb.get_task = mocker.Mock()
     kb.open_task = mocker.Mock()
     kb.update_task = mocker.Mock()
     return kb

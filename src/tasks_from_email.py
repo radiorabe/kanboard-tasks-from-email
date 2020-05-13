@@ -75,6 +75,28 @@ def convert_to_kb_date(date_str, increment_by_hours=0):
         local_kb_date = "%s" %(str(local_date.strftime('%d.%m.%Y %H:%M')))
     return local_kb_date
 
+
+def handle_well_known_forwarders(well_known, offset, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601):
+    """ if the email has been forwarded from specified addresses use sender 
+        email address and timestamp from message body """
+    fwd_email_addresses=re.findall('(From:.*\S+@\S+|To:.*\S+@\S+)', '%s' % body)
+    if fwd_email_addresses:
+        fwd_to_email_address=re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[1])[-1])
+        if fwd_to_email_address in well_known:
+            email_address = re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[0])[-1])
+            local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                      '',
+                                                                      re.search('Date:[\S ]+',
+                                                                                '%s' % body,
+                                                                                re.MULTILINE).group(0)))
+            local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
+                                                                    '',
+                                                                    re.search('Date:[\S ]+',
+                                                                              '%s' % body,
+                                                                              re.MULTILINE).group(0)),
+                                                             offset)
+    return email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601
+
 def create_user_for_sender(kb, email_address):
     """ create user for sender email if it doesn't exist """
     kb_user_id = None
@@ -144,24 +166,7 @@ def main():
                 kb_attachments[str(fileName)] = base64.b64encode(part.get_payload(decode=True))
                 body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
 
-        """ if the email has been forwarded from specified addresses use sender 
-            email address and timestamp from message body """
-        fwd_email_addresses=re.findall('(From:.*\S+@\S+|To:.*\S+@\S+)', '%s' % body)
-        if fwd_email_addresses:
-            fwd_to_email_address=re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[1])[-1])
-            if fwd_to_email_address in WELL_KNOWN_EMAIL_ADDRESSES:
-                email_address = re.sub('[<>]', '', re.findall('\S+@\S+', fwd_email_addresses[0])[-1])
-                local_task_start_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
-                                                                          '',
-                                                                          re.search('Date:[\S ]+',
-                                                                                    '%s' % body,
-                                                                                    re.MULTILINE).group(0)))
-                local_task_due_date_ISO8601 = convert_to_kb_date(re.sub('Date:\s*',
-                                                                        '',
-                                                                        re.search('Date:[\S ]+',
-                                                                                  '%s' % body,
-                                                                                  re.MULTILINE).group(0)),
-                                                                 KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
+        email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601 = handle_well_known_forwarders(WELL_KNOWN_EMAIL_ADDRESSES, KANBOARD_TASK_DUE_OFFSET_IN_HOURS, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601)
 
         kb_text = 'From: %s\n\nTo: %s\n\nDate: %s\n\nSubject: %s\n\n%s' % (email_from, 
                                                                            email_to, 

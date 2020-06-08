@@ -1,8 +1,16 @@
 """Contains global fixtures for pytest"""
+from os import environ
+
 import pytest
 import kanboard
 from email.message import EmailMessage
 
+environ['IMAPS_SERVER'] = 'imap.example.org'
+environ['IMAPS_USERNAME'] = 'imaps-user'
+environ['IMAPS_PASSWORD'] = 'imaps-pass'
+
+environ['KANBOARD_CONNECT_URL'] = 'https://kanboard.example.org'
+environ['KANBOARD_API_TOKEN'] = 'l33tT0k3n'
 
 @pytest.fixture
 def kb(mocker):

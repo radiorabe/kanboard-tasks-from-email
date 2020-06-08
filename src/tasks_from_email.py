@@ -37,15 +37,40 @@
 
 """ Import libraries and config file """
 import os, sys, imaplib, email, datetime, mailbox, kanboard, ssl, re, time, base64
-sys.path.append('/etc/tasks_from_email')
-try:
-    from tasks_from_email_config import *
-except ImportError:   # pragma: no cover
-    if os.path.exists('/etc/tasks_from_email'):
-        print('ERROR: Make sure tasks_from_email_config.py exists in "/etc/task_from_email", are readable and contain valid settings.')
-    else:
-        print('ERROR: The path "/etc/tasks_from_email" where the settings are kept, does not exist.')
-    exit(1)
+from os.path import basename, expanduser
+
+from configargparse import ArgumentParser
+
+
+def get_arguments(parser):
+    """Setup the provided ArgumentParser (a configargparse.ArgumentParser object) with arguments
+    and return arguments
+    Arguments:
+        parser: the parser to add arguments
+    Returns:
+        args: the parsed args from the parser
+    """
+
+    for arg in [
+        # mail server
+        ('--imaps-server', {'dest':'IMAPS_SERVER', 'help':'fqdn of mail sever', 'required':True}),
+        ('--imaps-user', {'dest':'IMAPS_USERNAME', 'env_var':'IMAPS_USERNAME', 'help':'imap user name', 'required':True}),
+        ('--imaps-password', {'dest':'IMAPS_PASSWORD', 'env_var':'IMAPS_PASSWORD', 'help':'imap user password', 'required':True}),
+        # kanboard
+        ('--kanboard-connect-url', {'dest':'KANBOARD_CONNECT_URL', 'help':'url for API requests', 'required':True}),
+        ('--kanboard-api-token', {'dest':'KANBOARD_API_TOKEN', 'help':'API token from a user that is allowed to create tasks', 'required':True}),
+        ('--kanboard-project-name', {'dest':'KANBOARD_PROJECT_NAME', 'help':'Name of the kanboard project where new tasks are going to be created.', 'default':'Support'}),
+        ('--kanboard-due-offset-hours', {'dest':'KANBOARD_TASK_DUE_OFFSET_IN_HOURS', 'help':'Number of hours the task is due after mail received', 'default':48}),
+        ('--kanboard-group-id', {'dest':'KANBOARD_GROUP_ID', 'help':"ID of group new users shall be added to. If set to 0 (default), the new user won't be added to a group.", 'default':0}),
+        # various
+        ('--well-known-email-addresses', {'dest':'WELL_KNOWN_EMAIL_ADDRESSES', 'help':'well-known mail addresses from where emails could be forwarded because they were sent to the wrong address', 'default':[]}),
+    ]:
+        name, params = arg
+        params['env_var'] = params['dest']
+        parser.add_argument(name, **params)
+
+    return parser.parse_args()
+
 
 def convert_to_kb_date(date_str, increment_by_hours=0):
     """convert a date into a kanboard compatible date
@@ -169,7 +194,24 @@ def reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_d
     kb.update_task(id=kb_task_id, date_due=local_task_due_date_ISO8601)
 
 def main():
-    imap_connection = imap_connect(IMAPS_SERVER, IMAPS_USERNAME, IMAPS_PASSWORD)
+    """main function"""
+    default_config_file = 'tasks_from_email.conf'
+    # TODO: use basename once modularized
+    # default_config_file = basename(__file__).replace('.py', '.conf')
+    # config file in /etc gets overriden by the one in /etc/tasks_from_email which gets overridden by the one in
+    # $HOME which gets overriden by the one in the current directory
+    default_config_files = [
+        '/etc/' + default_config_file,
+        '/etc/' + default_config_file.replace('.conf', '') + '/' + default_config_file,
+        expanduser('~') + '/' + default_config_file,
+        default_config_file
+    ]
+    parser = ArgumentParser(
+                default_config_files=default_config_files,
+                description='Kanboard Tasks from Email.')
+    args = get_arguments(parser)
+
+    imap_connection = imap_connect(args.IMAPS_SERVER, args.IMAPS_USERNAME, args.IMAPS_PASSWORD)
     typ, data = imap_search_unseen(imap_connection)
 
     for num in data[0].split():
@@ -180,7 +222,7 @@ def main():
 
         local_task_start_date_ISO8601 = convert_to_kb_date(email_message['Date'])
         local_task_due_date_ISO8601 = convert_to_kb_date(email_message['Date'], 
-                                                         KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
+                                                         args.KANBOARD_TASK_DUE_OFFSET_IN_HOURS)
         email_from = email_message['From']
         """ extract email address if specified as 'name <email address>' """
         email_address=re.sub('[<>]', '', re.findall('\S+@\S+', email_from)[-1])
@@ -189,7 +231,7 @@ def main():
 
         body, kb_attachments = walk_message_parts(email_message)
 
-        email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601 = handle_well_known_forwarders(WELL_KNOWN_EMAIL_ADDRESSES, KANBOARD_TASK_DUE_OFFSET_IN_HOURS, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601)
+        email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601 = handle_well_known_forwarders(args.WELL_KNOWN_EMAIL_ADDRESSES, args.KANBOARD_TASK_DUE_OFFSET_IN_HOURS, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601)
 
         kb_text = 'From: %s\n\nTo: %s\n\nDate: %s\n\nSubject: %s\n\n%s' % (email_from, 
                                                                            email_to, 
@@ -198,16 +240,16 @@ def main():
                                                                            body)
 
         """ connect to kanboard api """
-        kb = kanboard.Client(KANBOARD_CONNECT_URL+'/jsonrpc.php', 'jsonrpc', KANBOARD_API_TOKEN)
+        kb = kanboard.Client(args.KANBOARD_CONNECT_URL+'/jsonrpc.php', 'jsonrpc', args.KANBOARD_API_TOKEN)
 
         kb_user_id = create_user_for_sender(kb, email_address)
 
         """ add user to group """
-        if KANBOARD_GROUP_ID > 0:  # pragma: no cover - will get tested once config is refactored
-            kb.add_group_member(group_id=KANBOARD_GROUP_ID, user_id=kb_user_id)
+        if args.KANBOARD_GROUP_ID > 0:  # pragma: no cover - will get tested once config is refactored
+            kb.add_group_member(group_id=args.KANBOARD_GROUP_ID, user_id=kb_user_id)
 
         """ get id from project specified """
-        kb_project_id = kb.get_project_by_name(name=str(KANBOARD_PROJECT_NAME))['id']
+        kb_project_id = kb.get_project_by_name(name=str(args.KANBOARD_PROJECT_NAME))['id']
 
         kb_task_id, kb_task = get_task_if_subject_matches(kb, subject)
 

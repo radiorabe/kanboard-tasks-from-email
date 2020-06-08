@@ -76,6 +76,25 @@ def convert_to_kb_date(date_str, increment_by_hours=0):
     return local_kb_date
 
 
+def imap_connect(server, user, password):
+    """ connect and authenticate against mailserver """
+    imap_connection = imaplib.IMAP4_SSL(server)
+    imap_connection.login(user, password)
+    return imap_connection
+
+
+def imap_close(imap_connection):
+    """ close mailserver connection """
+    imap_connection.close()
+    imap_connection.logout()
+
+
+def imap_search_unseen(imap_connection):
+    """ get unread mails """
+    imap_connection.select('INBOX')
+    return imap_connection.search(None, 'unseen')
+
+
 def walk_message_parts(email_message):
     """
     Grab the body and all named attachments from a given email.message.EmailMessage.
@@ -150,13 +169,8 @@ def reopen_and_update(kb, kb_task, kb_task_id, kb_user_id, kb_text, local_task_d
     kb.update_task(id=kb_task_id, date_due=local_task_due_date_ISO8601)
 
 def main():
-    """ connect and authenticate against mailserver """
-    imap_connection = imaplib.IMAP4_SSL(IMAPS_SERVER)
-    imap_connection.login(IMAPS_USERNAME, IMAPS_PASSWORD)
-
-    """ get unread mails """
-    imap_connection.select('INBOX')
-    typ, data = imap_connection.search(None, 'unseen')
+    imap_connection = imap_connect(IMAPS_SERVER, IMAPS_USERNAME, IMAPS_PASSWORD)
+    typ, data = imap_search_unseen(imap_connection)
 
     for num in data[0].split():
         """ for each unread mail do """
@@ -218,9 +232,8 @@ def main():
                                     filename=i, 
                                     blob=kb_attachments[i].decode('utf-8'))
 
-    """ close mailserver connection """
-    imap_connection.close()
-    imap_connection.logout()
+    imap_close(imap_connection)
+
 
 if __name__ == "__main__":
     main()

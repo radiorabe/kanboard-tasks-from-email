@@ -76,6 +76,28 @@ def convert_to_kb_date(date_str, increment_by_hours=0):
     return local_kb_date
 
 
+def walk_message_parts(email_message):
+    """
+    Grab the body and all named attachments from a given email.message.EmailMessage.
+    """
+    body = None
+    kb_attachments = {}
+
+    for part in email_message.walk():
+        """ get plain text body details """
+        if part.get_content_maintype() == 'multipart':
+            continue
+        if part.get('Content-Disposition') is None:
+            if part.get_content_type() == 'text/plain':
+                body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
+            continue
+        fileName = email.header.make_header(email.header.decode_header(part.get_filename()))
+        if bool(fileName):
+            kb_attachments[str(fileName)] = base64.b64encode(part.get_payload(decode=True))
+            body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
+    return (body, kb_attachments)
+
+
 def handle_well_known_forwarders(well_known, offset, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601):
     """ if the email has been forwarded from specified addresses use sender 
         email address and timestamp from message body """
@@ -151,20 +173,7 @@ def main():
         email_to = email_message['To']
         subject = email.header.make_header(email.header.decode_header(email_message['Subject']))
 
-        kb_attachments = {}
-
-        for part in email_message.walk():
-            """ get plain text body details """
-            if part.get_content_maintype() == 'multipart':
-                continue
-            if part.get('Content-Disposition') is None:
-                if part.get_content_type() == 'text/plain':
-                    body = re.sub('\r\n', '\r\n\r\n', part.get_payload(decode=True).decode('utf-8'))
-                continue
-            fileName = email.header.make_header(email.header.decode_header(part.get_filename()))
-            if bool(fileName):
-                kb_attachments[str(fileName)] = base64.b64encode(part.get_payload(decode=True))
-                body = '%s\n\n<< Attachment: %s >>' %(body, fileName)
+        body, kb_attachments = walk_message_parts(email_message)
 
         email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601 = handle_well_known_forwarders(WELL_KNOWN_EMAIL_ADDRESSES, KANBOARD_TASK_DUE_OFFSET_IN_HOURS, body, email_address, local_task_start_date_ISO8601, local_task_due_date_ISO8601)
 

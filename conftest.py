@@ -1,6 +1,7 @@
 """Contains global fixtures for pytest"""
 import pytest
 import kanboard
+from email.message import EmailMessage
 
 
 @pytest.fixture
@@ -18,3 +19,12 @@ def kb(mocker):
     kb.open_task = mocker.Mock()
     kb.update_task = mocker.Mock()
     return kb
+
+@pytest.fixture
+def email_message(mocker):
+    """
+    Mock an email.message.EmailMessage object
+    """
+    mail = mocker.Mock(EmailMessage)
+    mail.walk.return_value = []
+    return mail

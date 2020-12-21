@@ -40,7 +40,7 @@ import os, sys, imaplib, email, datetime, mailbox, kanboard, ssl, re, time, base
 sys.path.append('/etc/tasks_from_email')
 try:
     from tasks_from_email_config import *
-except ImportError:
+except ImportError:   # pragma: no cover
     if os.path.exists('/etc/tasks_from_email'):
         print('ERROR: Make sure tasks_from_email_config.py exists in "/etc/task_from_email", are readable and contain valid settings.')
     else:
@@ -203,7 +203,7 @@ def main():
         kb_user_id = create_user_for_sender(kb, email_address)
 
         """ add user to group """
-        if KANBOARD_GROUP_ID > 0:
+        if KANBOARD_GROUP_ID > 0:  # pragma: no cover - will get tested once config is refactored
             kb.add_group_member(group_id=KANBOARD_GROUP_ID, user_id=kb_user_id)
 
         """ get id from project specified """
@@ -235,5 +235,5 @@ def main():
     imap_close(imap_connection)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":   # pragma: no cover
     main()

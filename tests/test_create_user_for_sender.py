@@ -1,6 +1,4 @@
-import pytest
-
-from tasks_from_email import create_user_for_sender
+from src.tasks_from_email import create_user_for_sender
 
 
 class TestCreateUserForSender:
@@ -9,7 +7,7 @@ class TestCreateUserForSender:
     def test_call_with_no_users(self, kb):
         kb.get_all_users.return_value = []
 
-        result = create_user_for_sender(kb, self._EMAIL)
+        create_user_for_sender(kb, self._EMAIL)
         kb.create_user.assert_called_with(
             username=self._EMAIL, password=self._EMAIL, email=self._EMAIL
         )
@@ -21,7 +19,7 @@ class TestCreateUserForSender:
         kb.create_user.return_value = 956
 
         result = create_user_for_sender(kb, self._EMAIL)
-        assert result == 956
+        assert result == 956  # noqa: PLR2004
         kb.create_user.assert_called_with(
             username=self._EMAIL, password=self._EMAIL, email=self._EMAIL
         )
@@ -32,5 +30,5 @@ class TestCreateUserForSender:
         ]
 
         result = create_user_for_sender(kb, self._EMAIL)
-        assert result == 956
+        assert result == 956  # noqa: PLR2004
         assert not kb.create_user.called

@@ -1,12 +1,12 @@
 import pytest
 from freezegun import freeze_time
 
-from tasks_from_email import convert_to_kb_date
+from src.tasks_from_email import convert_to_kb_date
 
 
 class TestConvertToKbDate:
     @pytest.mark.parametrize(
-        "date_str,expected",
+        ("date_str", "expected"),
         [
             ("Mon, 20 Nov 1995 19:12:08 -0500", "20.11.1995 19:12"),
             ("20 Nov 1995 7:12 PM", "20.11.1995 19:12"),
@@ -19,7 +19,7 @@ class TestConvertToKbDate:
         assert result == expected
 
     @pytest.mark.parametrize(
-        "increment,expected",
+        ("increment", "expected"),
         [
             (0, "20.11.1995 19:12"),
             (1, "20.11.1995 20:12"),

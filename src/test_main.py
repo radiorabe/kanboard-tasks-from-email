@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import Mock, call
 
 import email
 import kanboard
@@ -33,7 +34,7 @@ class TestMain:
         mocker.patch("email.header.make_header")
         mocker.patch("kanboard.Client")
 
-        imap_connection = mocker.Mock()
+        imap_connection = Mock()
         imap_connection.fetch.return_value = ("typ", [(None, b"raw")])
         tasks_from_email.imap_connect.return_value = imap_connection
         tasks_from_email.imap_search_unseen.return_value = ("typ", ["a"])
@@ -70,14 +71,14 @@ class TestMain:
         imap_connection.fetch.assert_called_once_with("a", "(RFC822)")
         email.message_from_bytes.assert_called_once_with(b"raw")
         tasks_from_email.convert_to_kb_date.assert_has_calls(
-            [mocker.call("rfcdate"), mocker.call("rfcdate", 48)]
+            [call("rfcdate"), call("rfcdate", 48)]
         )
         assert email_message.__getitem__.call_args_list == [
-            mocker.call("Date"),
-            mocker.call("Date"),
-            mocker.call("From"),
-            mocker.call("To"),
-            mocker.call("Subject"),
+            call("Date"),
+            call("Date"),
+            call("From"),
+            call("To"),
+            call("Subject"),
         ]
         kanboard.Client.assert_called_once()
         tasks_from_email.create_user_for_sender.called_once_with(kb, "from@example.org")

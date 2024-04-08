@@ -1,6 +1,6 @@
 import pytest
 
-from tasks_from_email import get_task_if_subject_matches
+from src.tasks_from_email import get_task_if_subject_matches
 
 
 class TestGetTaskIfSubjectMatches:
@@ -9,7 +9,7 @@ class TestGetTaskIfSubjectMatches:
         assert result == (False, None)
 
     @pytest.mark.parametrize(
-        "subject,expected",
+        ("subject", "expected"),
         [
             ("[KB#956]", ("956", {})),
             ("[KB#956] as prefix", ("956", {})),
@@ -17,7 +17,7 @@ class TestGetTaskIfSubjectMatches:
             ("as [KB#956] affix", ("956", {})),
             ("[KB#12345678901234567890] ridiculous", ("12345678901234567890", {})),
             ("[KB#000] ridiculous", ("000", {})),
-            ],
+        ],
     )
     def test_call_with_known_subjects(self, kb, subject, expected):
         kb.get_task.return_value = expected[1]

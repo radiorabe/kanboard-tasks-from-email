@@ -1,11 +1,15 @@
 import pytest
 
-from tasks_from_email import reopen_and_update
+from src.tasks_from_email import reopen_and_update
 
 
 class TestReopenAndUpdate:
     @pytest.mark.parametrize(
-        "kb_task,open_called", [({"is_active": 1}, False), ({"is_active": 0}, True),]
+        ("kb_task", "open_called"),
+        [
+            ({"is_active": 1}, False),
+            ({"is_active": 0}, True),
+        ],
     )
     def test_call_open_task(self, kb, kb_task, open_called):
         reopen_and_update(kb, kb_task, 956, None, None, None)

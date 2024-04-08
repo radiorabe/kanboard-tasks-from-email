@@ -1,2 +1,0 @@
-ConfigArgParse==1.7
-kanboard==1.1.5

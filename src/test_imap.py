@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import Mock
 
 import imaplib
 
@@ -8,7 +9,7 @@ class TestImapFunctions:
     def test_imap_connect(self, mocker):
         mocker.patch('imaplib.IMAP4_SSL')
 
-        connection = mocker.Mock()
+        connection = Mock()
         imaplib.IMAP4_SSL.return_value = connection
 
         imap_connection = imap_connect('servername', 'username', 'password')
@@ -16,16 +17,16 @@ class TestImapFunctions:
         imaplib.IMAP4_SSL.assert_called_once_with('servername')
         assert imap_connection == connection
 
-    def test_imap_close(self, mocker):
-        imap_connection = mocker.Mock()
+    def test_imap_close(self):
+        imap_connection = Mock()
 
         imap_close(imap_connection)
 
         imap_connection.close.assert_called_once()
         imap_connection.logout.assert_called_once()
 
-    def test_image_search_unseen(self, mocker):
-        imap_connection = mocker.Mock()
+    def test_image_search_unseen(self):
+        imap_connection = Mock()
         imap_connection.search.return_value = ('typ', 'data')
 
         typ, data = imap_search_unseen(imap_connection)
